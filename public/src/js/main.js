@@ -5,12 +5,12 @@ var button = document.querySelector('button');
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker
     .register('/sw.js')
-    .then(function() {
+    .then(function () {
       console.log('Registered Service Worker!');
     });
 }
 
-button.addEventListener('click', function(event) {
+button.addEventListener('click', function (event) {
   if (box.classList.contains('visible')) {
     box.classList.remove('visible');
   } else {
@@ -18,14 +18,35 @@ button.addEventListener('click', function(event) {
   }
 });
 
-fetch('https://httpbin.org/ip')
-  .then(function(res) {
+var url = 'https://httpbin.org/ip';
+var networkDataReceived = false;
+
+fetch(url)
+  .then(function (res) {
     return res.json();
   })
-  .then(function(data) {
+  .then(function (data) {
+    networkDataReceived = true;
+    console.log('From web', data);
     console.log(data.origin);
     box.style.height = (data.origin.substr(0, 2) * 5) + 'px';
   });
+
+if ('caches' in window) {
+  caches.match(url)
+    .then(function (response) {
+      if (response) {
+        return response.json();
+      }
+    })
+    .then(function (data) {
+      console.log('From cache', data);
+      if (!networkDataReceived) {
+        console.log(data.origin);
+        box.style.height = (data.origin.substr(0, 2) * 5) + 'px';
+      }
+    })
+}
 
 // 1) Identify the strategy we currently use in the Service Worker (for caching)
 // 2) Replace it with a "Network only" strategy => Clear Storage (in Dev Tools), reload & try using your app offline
