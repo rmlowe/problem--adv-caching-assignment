@@ -1,4 +1,3 @@
-
 var CACHE_STATIC_NAME = 'static-v2';
 var CACHE_DYNAMIC_NAME = 'dynamic-v1';
 var STATIC_FILES = [
@@ -35,20 +34,29 @@ self.addEventListener('activate', function (event) {
   );
 });
 
+function isInArray(string, array) {
+  for (var i = 0; i < array.length; i++) {
+    if (array[i] === string) {
+      return true;
+    }
+  }
+  return false;
+}
+
+// Dynamic caching for Cache, then network strategy
 self.addEventListener('fetch', function (event) {
-  var url = 'https://httpbin.org/ip';
-  if (event.request.url.indexOf(url) > -1) {
+  if (event.request.url.indexOf('https://httpbin.org/ip') > -1) {
     event.respondWith(
       caches.open(CACHE_DYNAMIC_NAME)
         .then(function (cache) {
           return fetch(event.request)
             .then(function (res) {
-              cache.put(event.request, res.clone());
+              cache.put(event.request.url, res.clone());
               return res;
-            });
+            })
         })
     );
-  } else if (new RegExp('\\b' + STATIC_FILES.join('\\b|\\b') + '\\b').test(event.request.url)) {
+  } else if (isInArray(event.request.url, STATIC_FILES)) {
     event.respondWith(
       caches.match(event.request)
     );
@@ -74,45 +82,58 @@ self.addEventListener('fetch', function (event) {
         })
     );
   }
-
-  // event.respondWith(
-  //   // Network, cache fallback
-  //   fetch(event.request)
-  //     .then(function (res) {
-  //       return caches.open(CACHE_DYNAMIC_NAME)
-  //         .then(function (cache) {
-  //           cache.put(event.request.url, res.clone());
-  //           return res;
-  //         })
-  //     })
-  //     .catch(function (err) {
-  //       return caches.match(event.request);
-  //     })
-
-  //   // Cache only
-  //   // caches.match(event.request)
-
-  //   // Nework only
-  //   // fetch(event.request)
-
-  //   // Cache, network fallback
-  //   // caches.match(event.request)
-  //   //   .then(function(response) {
-  //   //     if (response) {
-  //   //       return response;
-  //   //     } else {
-  //   //       return fetch(event.request)
-  //   //         .then(function(res) {
-  //   //           return caches.open(CACHE_DYNAMIC_NAME)
-  //   //             .then(function(cache) {
-  //   //               cache.put(event.request.url, res.clone());
-  //   //               return res;
-  //   //             });
-  //   //         })
-  //   //         .catch(function(err) {
-
-  //   //         });
-  //   //     }
-  //   //   })
-  // );
 });
+
+// // Network, fallback to cache
+// self.addEventListener('fetch', function (event) {
+//   event.respondWith(
+//     fetch(event.request)
+//       .then(function (res) {
+//         return caches.open(CACHE_DYNAMIC_NAME)
+//           .then(function (cache) {
+//             cache.put(event.request.url, res.clone());
+//             return res;
+//           })
+//       })
+//       .catch(function (err) {
+//         return caches.match(event.request);
+//       })
+//   );
+// });
+
+// // Cache-only
+// self.addEventListener('fetch', function (event) {
+//   event.respondWith(
+//     caches.match(event.request)
+//   );
+// });
+
+// // Network-only
+// self.addEventListener('fetch', function (event) {
+//   event.respondWith(
+//     fetch(event.request)
+//   );
+// });
+
+// self.addEventListener('fetch', function (event) {
+//   event.respondWith(
+//     caches.match(event.request)
+//       .then(function (response) {
+//         if (response) {
+//           return response;
+//         } else {
+//           return fetch(event.request)
+//             .then(function (res) {
+//               return caches.open(CACHE_DYNAMIC_NAME)
+//                 .then(function (cache) {
+//                   cache.put(event.request.url, res.clone());
+//                   return res;
+//                 });
+//             })
+//             .catch(function (err) {
+
+//             });
+//         }
+//       })
+//   );
+// });
